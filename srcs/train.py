@@ -2,9 +2,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
-from sklearn.svm import SVC
 from sklearn.impute import SimpleImputer
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.metrics import accuracy_score, classification_report
+from imblearn.over_sampling import RandomOverSampler
 
 from utils.tools import printError, printLog
 from utils.preprocessing import getData, UnderSample
@@ -22,23 +23,28 @@ if __name__ == '__main__':
 
 #        printLog('====> Under sampling...')
 #        X, y = UnderSample(X, y)
+#        breakpoint()
 #        printLog('====> Done')
+
+        printLog('====> Over sampling...')
+        sampler = RandomOverSampler(random_state=42)
+        X, y = sampler.fit_resample(X, y)
+        printLog('====> Done')
 
         printLog('====> Splitting data...')
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
         printLog('====> Done')
 
-        printLog('====> Creating pipeline...')
+        printLog('====> Creating pipelines...')
         preprocessing = Pipeline([
             ('imputer', SimpleImputer(strategy='median')),
             ('scaler', StandardScaler()),
-            ('pca', PCA(n_components=10))
+            ('pca', PCA(n_components=150))
         ])
 
         pipeline = Pipeline([
             ('preprocessing', preprocessing),
-            ('knn', KNeighborsClassifier(n_neighbors=3))
-#            ('svm', SVC(kernel='linear'))
+            ('mlp', MLPClassifier(random_state=42, max_iter=1000, activation='logistic', verbose=True))
         ])
         printLog('====> Done')
 
@@ -61,6 +67,10 @@ if __name__ == '__main__':
 
         printLog(f'{(good_pred / len(predictions) * 100)}% correct predictions')
         printLog('DONE')
+
+        accuracy = accuracy_score(y_test, predictions)
+        printLog(f'Accuracy on test set: {accuracy * 100:.2f}%')
+        printLog(classification_report(y_test, predictions))
 
     except Exception as error:
         printError(f'error: {error}')
