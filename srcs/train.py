@@ -1,14 +1,16 @@
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
 from sklearn.neural_network import MLPClassifier
-from sklearn.metrics import accuracy_score, classification_report
-from imblearn.over_sampling import RandomOverSampler
+from sklearn.metrics import accuracy_score, classification_report, make_scorer
+from joblib import dump
 
 from utils.tools import printError, printLog
-from utils.preprocessing import getData, UnderSample
+from utils.preprocessing import getData, OverSample, myPCA
+
+import numpy as np
+
 
 
 if __name__ == '__main__':
@@ -21,14 +23,8 @@ if __name__ == '__main__':
         y = dataframe['label']
         printLog('====> Done')
 
-#        printLog('====> Under sampling...')
-#        X, y = UnderSample(X, y)
-#        breakpoint()
-#        printLog('====> Done')
-
         printLog('====> Over sampling...')
-        sampler = RandomOverSampler(random_state=42)
-        X, y = sampler.fit_resample(X, y)
+        X, y = OverSample(X, y)
         printLog('====> Done')
 
         printLog('====> Splitting data...')
@@ -39,14 +35,23 @@ if __name__ == '__main__':
         preprocessing = Pipeline([
             ('imputer', SimpleImputer(strategy='median')),
             ('scaler', StandardScaler()),
-            ('pca', PCA(n_components=150))
+            ('pca', myPCA(n_components=150))
         ])
 
         pipeline = Pipeline([
             ('preprocessing', preprocessing),
-            ('mlp', MLPClassifier(random_state=42, max_iter=1000, activation='logistic', verbose=True))
+            ('mlp', MLPClassifier(random_state=42, max_iter=10, activation='logistic', verbose=True))
         ])
         printLog('====> Done')
+
+
+        printLog('=====> Performing cross-validation...')
+        accuracy_scorer = make_scorer(accuracy_score)
+        scores = cross_val_score(pipeline, X, y, cv=5, scoring=accuracy_scorer)
+        printLog('Cross-validation scores: {}'.format(scores))
+        printLog('Mean cross-validation score: {:.2f}%'.format(scores.mean() * 100))
+        printLog('=====> Done')
+
 
         printLog('=====> Training model...')
         pipeline.fit(X_train, y_train)
@@ -56,21 +61,10 @@ if __name__ == '__main__':
         predictions = pipeline.predict(X_test)
         printLog('=====> Done')
 
-        y_test.reset_index(drop=True, inplace=True)
-        good_pred = 0
-        for p, prediction in enumerate(predictions):
-            if prediction == y_test[p]:
-                good_pred += 1
-                printLog(f'{y_test[p]} ===> {prediction}')
-            else:
-                printError(f'{y_test[p]} ===> {prediction}')
-
-        printLog(f'{(good_pred / len(predictions) * 100)}% correct predictions')
-        printLog('DONE')
-
         accuracy = accuracy_score(y_test, predictions)
         printLog(f'Accuracy on test set: {accuracy * 100:.2f}%')
         printLog(classification_report(y_test, predictions))
+        dump(pipeline, 'data/pipeline.joblib')
 
     except Exception as error:
         printError(f'error: {error}')

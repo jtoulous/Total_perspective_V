@@ -4,18 +4,31 @@ import random
 import pandas as pd
 import numpy as np
 
-from sklearn.base import TransformerMixin
+from sklearn.base import TransformerMixin, BaseEstimator
 from .tools import printError, printLog
 
 
-#class PCA(TransformerMixin):
-#   def __init__():
-#
-#   def fit():
-#   
-#   def transform():
+class myPCA(BaseEstimator, TransformerMixin):
+    def __init__(self, n_components):
+        self.n_components = n_components
+        self.components_ = None
+        self.mean_ = None
 
+    def fit(self, X, y=None):
+        self.mean_ = np.mean(X, axis=0)
+        centered_data = X - self.mean_
+        cov_matrix = np.cov(centered_data, rowvar=False)
+        eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix)
+        self.components_ = eigenvectors[:, -self.n_components:]
+        return self
 
+    def transform(self, X):
+        centered_data = X - self.mean_
+        transformed_data = np.dot(centered_data, self.components_)
+        return transformed_data
+
+    def fit_transform(self, X, y=None):
+        return self.fit(X).transform(X)
 
 
 def getLabel(file, annotation_type):
@@ -116,7 +129,8 @@ def getData():
     return dataframe, features
 
 
-def UnderSample(X, y):
+def UnderSample(X, y, random_state=42):
+    np.random.seed(random_state)
     idx_to_remove = []
     labels, counts = np.unique(y, return_counts=True)
     min_count = min(counts)
@@ -130,4 +144,14 @@ def UnderSample(X, y):
     y = y.drop(index=idx_to_remove)
     return X, y
 
-#def OverSample(X, y):
+def OverSample(X, y, random_state=42):
+    np.random.seed(random_state)
+    labels, counts = np.unique(y, return_counts=True)
+    max_count = max(counts)
+    for label in labels:
+        label_indexes = y.index[y == label].tolist()
+        dup_nb = max_count - len(label_indexes)
+        dup_indexes = np.random.choice(label_indexes, size=dup_nb, replace=True)
+        X = pd.concat([X, X.loc[dup_indexes]], ignore_index=True)
+        y = pd.concat([y, y.loc[dup_indexes]], ignore_index=True)
+    return X, y
