@@ -88,13 +88,12 @@ def getGammaSignals(new_data, segment, sfreq):
 def getData():
     if not os.path.exists('data/data_preprocessed.csv'):
         dataframe = pd.DataFrame()
-        data_repo = 'subjects_scans'
+        data_repo = 'data/subjects_scans'
         subjects_repo = []
         for repo in os.listdir(data_repo):
             if os.path.isdir(data_repo + '/' + repo):
                 subjects_repo.append(repo)
 
-        breakpoint()
         for i, repo in enumerate(subjects_repo):
             printLog(f'\n =========   {i}/{len(subjects_repo)}   ========')
             subject_id = i + 1 

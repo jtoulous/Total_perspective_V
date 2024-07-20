@@ -5,7 +5,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score, classification_report, make_scorer
-from sklearn.svm import SVC
 from joblib import dump
 
 from utils.tools import printError, printLog
@@ -60,13 +59,13 @@ if __name__ == '__main__':
         printLog('=====> Done')
 
 
-        printLog('=====> Training model...')
+        printLog('====> Training model...')
         pipeline.fit(X, y)
-        printLog('=====> Done')
+        printLog('====> Done')
 
-        printLog('=====> Predicting...')
+        printLog('====> Predicting...')
         predictions = pipeline.predict(X)
-        printLog('=====> Done')
+        printLog('====> Done')
 
         accuracy = accuracy_score(y, predictions)
         printLog(f'Accuracy on test set: {accuracy * 100:.2f}%')
